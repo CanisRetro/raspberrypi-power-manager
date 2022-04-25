@@ -13,7 +13,7 @@ class PowerStatusReader:
     Runs in multiple separate listener threads
     """
     _reader_log = logging.getLogger(__name__)
-    _logfile_name = "../config/log/{0}.log".format(__name__)
+    _logfile_name = "./config/log/{0}.log".format(__name__)
 
     _status_gpio = None
     _buzzer_gpio = None
@@ -21,8 +21,8 @@ class PowerStatusReader:
     _status_sensor = None
     _buzzer_sensor = None
 
-    _status_filename = "../config/power_status"
-    _buzzer_filename = "../config/debug_buzzer"
+    _status_filename = "./config/power_status"
+    _buzzer_filename = "./config/debug_buzzer"
 
     _listeners = []
 

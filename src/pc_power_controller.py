@@ -13,10 +13,10 @@ class PowerStateController:
     """
 
     _controller_log = logging.getLogger(__name__)
-    _logfile_name = "../config/log/{0}.log".format(__name__)
+    _logfile_name = "./config/log/{0}.log".format(__name__)
 
-    _status_filename = "../config/power_status"
-    _buzzer_filename = "../config/buzzer_code"
+    _status_filename = "./config/power_status"
+    _buzzer_filename = "./config/buzzer_code"
 
     _message_template = "{\"command_status\"=\"${command_status}\",\"message\"=\"${message}\"}"
 
