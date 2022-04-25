@@ -43,7 +43,6 @@ def load_gpio_configs():
 
 
 if __name__ == '__main__':
-    # mp.set_start_method("fork")
 
     load_gpio_configs()
     run_log.info("Loaded GPIO Configs")
@@ -62,7 +61,6 @@ if __name__ == '__main__':
 
     input("end?\n")
     state_controller.shutdown_power_controller()
-
     state_reader.shutdown_status_reader()
 
 

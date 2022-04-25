@@ -24,7 +24,6 @@ class PowerStatusReader():
     _status_filename = "../config/power_status"
     _buzzer_filename = "../config/debug_buzzer"
 
-    _listener_pool = mp.Pool(processes=2)
     _listeners = []
 
     def __init__(self, status_gpio, buzzer_gpio, log_level=logging.INFO):
@@ -55,6 +54,7 @@ class PowerStatusReader():
         self._reader_log.addHandler(reader_log_filehandler)
         self._reader_log.setLevel(log_level)
 
+    # PowerStateHandler Private Methods
     def _start_listener_processes(self):
         """
         Cleanly Start Required Background Listener Processes
@@ -69,7 +69,6 @@ class PowerStatusReader():
         buzzer_listener.start()
         self._listeners.append(buzzer_listener)
 
-    # PowerStateHandler Private Methods
     def _setup_input_pins(self):
         """
         Attempt to set GPIO or board pins to input mode
@@ -166,21 +165,24 @@ class PowerStatusReader():
         Delete the debug_buzzer file uses to share power status between threads
         """
         try:
-            if os.path.exists(self._status_filename):
-                os.remove(self._status_filename)
-                self._reader_log.debug("Successfully Deleted power_status file")
+            if os.path.exists(self._buzzer_filename):
+                os.remove(self._buzzer_filename)
+                self._reader_log.debug("Successfully Deleted debug_buzzer file")
             else:
-                self._reader_log.debug("power_status file not present")
+                self._reader_log.debug("debug_buzzer file not present")
         except OSError as os_error:
-            self._reader_log.critical("{0}: Unable to delete power_status file".format(os_error))
+            self._reader_log.critical("{0}: Unable to delete debug_buzzer file".format(os_error))
 
     def _kill_listener_processes(self):
         """
         Kill ongoing listener processes
         """
-        for process in self._listeners:
-            # Terminate Listener Objects
-            process.terminate()
+        try:
+            for process in self._listeners:
+                process.terminate()
+            self._reader_log.info("Successfully Killed Power State Reader Listener Processes")
+        except RuntimeError as rt_error:
+            self._reader_log.critical("{0} Unable To Kill Listener Processes".format(rt_error))
 
     def _start_power_status_listener(self):
         """
@@ -207,6 +209,7 @@ class PowerStatusReader():
         """
         self._kill_listener_processes()
         self._delete_status_file()
+        self._delete_buzzer_file()
         self._cleanup_input_devices()
 
 
