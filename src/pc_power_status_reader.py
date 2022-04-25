@@ -206,7 +206,7 @@ class PowerStatusReader:
 
     def _start_buzzer_listener(self):
         """
-
+        Begin processes to regularly update the debug_buzzer file
         """
         with open(self._buzzer_filename, 'w') as buzzer_file:
             buzzer_file.write("0")
