@@ -43,21 +43,11 @@ def load_gpio_configs():
 
 
 if __name__ == '__main__':
-    mp.set_start_method("fork")
-    listener_pool = mp.Pool(processes=2)
+    # mp.set_start_method("fork")
 
     load_gpio_configs()
-
     run_log.info("Loaded GPIO Configs")
     state_reader = PowerStatusReader(status_gpio, buzzer_gpio)
-
-    power_status_listener = mp.Process(name="power_status_listener", target=state_reader.start_power_status_listener)
-    # power_status_listener.daemon = True
-    power_status_listener.start()
-
-    buzzer_listener = mp.Process(name="buzzer_listener", target=state_reader.start_buzzer_listener)
-    # buzzer_listener.daemon = True
-    buzzer_listener.start()
 
     time.sleep(1)
 
@@ -72,7 +62,7 @@ if __name__ == '__main__':
 
     input("end?\n")
     state_controller.shutdown_power_controller()
+
     state_reader.shutdown_status_reader()
 
-    power_status_listener.join()
-    buzzer_listener.join()
+
