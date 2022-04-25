@@ -1,7 +1,5 @@
-import os
 import time
 import logging
-import multiprocessing as mp
 from configparser import ConfigParser
 from pc_power_controller import PowerStateController
 from pc_power_status_reader import PowerStatusReader
@@ -43,14 +41,13 @@ def load_gpio_configs():
 
 
 if __name__ == '__main__':
-
     load_gpio_configs()
     run_log.info("Loaded GPIO Configs")
-    state_reader = PowerStatusReader(status_gpio, buzzer_gpio)
-
+    state_reader = PowerStatusReader(status_gpio, buzzer_gpio, log_level=logging.DEBUG)
+    run_log.info("Loaded Status Reader")
     time.sleep(1)
-
-    state_controller = PowerStateController(power_gpio, reboot_gpio)
+    state_controller = PowerStateController(power_gpio, reboot_gpio, log_level=logging.DEBUG)
+    run_log.info("Loaded Status Controller")
 
     input("turn on?\n")
     print(state_controller.power_on())
@@ -62,5 +59,3 @@ if __name__ == '__main__':
     input("end?\n")
     state_controller.shutdown_power_controller()
     state_reader.shutdown_status_reader()
-
-
