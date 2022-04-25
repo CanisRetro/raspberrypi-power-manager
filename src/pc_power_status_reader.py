@@ -1,13 +1,13 @@
 import os
 import time
 import logging
-from multiprocessing import Process
+import multiprocessing as mp
 from gpiozero import GPIOZeroError
 from power_status import PowerStatus
 from libs.custom_gpio_devices import BasicHighSensor
 
 
-class PowerStatusReader():
+class PowerStatusReader:
     """
     Watch Input pins for changes and record/ report them
     Runs in multiple separate listener threads
@@ -24,6 +24,8 @@ class PowerStatusReader():
     _status_filename = "../config/power_status"
     _buzzer_filename = "../config/debug_buzzer"
 
+    _listeners = []
+
     def __init__(self, status_gpio, buzzer_gpio, log_level=logging.INFO):
         """
         Initialize PowerStateReader object and prepare listening devices
@@ -37,7 +39,9 @@ class PowerStatusReader():
         self._status_gpio = status_gpio
         self._buzzer_gpio = buzzer_gpio
         self._setup_input_pins()
+        self._start_listener_processes()
 
+    # PowerStateHandler Private Methods
     def _start_logging(self, log_level=logging.INFO):
         """
         Start logging to a designated power state reader log file at the desired log level
@@ -51,7 +55,22 @@ class PowerStatusReader():
         self._reader_log.addHandler(reader_log_filehandler)
         self._reader_log.setLevel(log_level)
 
-    # PowerStateHandler Private Methods
+    def _start_listener_processes(self):
+        """
+        Cleanly Start Required Background Listener Processes
+        """
+        # Power Status Listener
+        power_status_listener = mp.Process(name="power_status_listener",
+                                           target=self._start_power_status_listener)
+        power_status_listener.start()
+        self._listeners.append(power_status_listener)
+        # Debug Buzzer Listener
+        buzzer_listener = mp.Process(name="buzzer_listener",
+                                     target=self._start_buzzer_listener)
+        buzzer_listener.start()
+        # Organize Listeners
+        self._listeners.append(buzzer_listener)
+
     def _setup_input_pins(self):
         """
         Attempt to set GPIO or board pins to input mode
@@ -72,6 +91,9 @@ class PowerStatusReader():
             return False
 
     def _listen_for_power_status_change(self):
+        """
+        Repeatedly check the power status pin for changes
+        """
         self._reader_log.info("Power Status Listening Process Starting")
         while True:
             current_status = self._read_power_status()
@@ -99,19 +121,24 @@ class PowerStatusReader():
             return PowerStatus.UNKNOWN
 
     def _listen_for_buzzer_start(self):
-        """"""
+        """
+
+        """
         self._reader_log.info("Buzzer Listening Thread Starting")
         while True:
             self._buzzer_sensor.when_activated = lambda: self._count_buzz()
             time.sleep(0.01)
 
     def _count_buzz(self):
-        """"""
+        """
+
+        """
         print("BUZZ")
         with open(self._buzzer_filename, 'r') as buzzer_file:
             buzz_count = int(buzzer_file.readline())
         with open(self._buzzer_filename, 'w') as buzzer_file:
             buzzer_file.write(str(buzz_count + 1))
+        self._reader_log.info("Debug Buzzer Read: {0}".format(str(buzz_count)))
 
     def _cleanup_input_devices(self):
         """
@@ -143,30 +170,55 @@ class PowerStatusReader():
         except OSError as os_error:
             self._reader_log.critical("{0}: Unable to delete power_status file".format(os_error))
 
-    def start_power_status_listener(self):
+    def _delete_buzzer_file(self):
         """
+        Delete the debug_buzzer file uses to share power status between threads
+        """
+        try:
+            if os.path.exists(self._buzzer_filename):
+                os.remove(self._buzzer_filename)
+                self._reader_log.debug("Successfully Deleted debug_buzzer file")
+            else:
+                self._reader_log.debug("Did not need to delete debug_buzzer file, file not present")
+        except OSError as os_error:
+            self._reader_log.critical("{0}: Unable to delete debug_buzzer file".format(os_error))
 
+    def _kill_listener_processes(self):
+        """
+        Kill ongoing listener processes
+        """
+        try:
+            for process in self._listeners:
+                process.terminate()
+            self._reader_log.info("Successfully killed PowerStatusReader listener processes")
+        except RuntimeError as rt_error:
+            self._reader_log.critical("{0} Unable to kill listener processes".format(rt_error))
+
+    def _start_power_status_listener(self):
+        """
+        Begin processes to regularly update the power_status file with accurate power status
         """
         with open(self._status_filename, 'w') as status_file:
             status_file.write(str(PowerStatus.UNKNOWN))
-        self._reader_log.info("Created Power Status Tracking File")
+        self._reader_log.info("Created power_status tracking file")
 
         self._listen_for_power_status_change()
 
-    def start_buzzer_listener(self):
+    def _start_buzzer_listener(self):
         """
-
+        Begin processes to regularly update the debug_buzzer file
         """
         with open(self._buzzer_filename, 'w') as buzzer_file:
             buzzer_file.write("0")
-        self._reader_log.info("Created Debug Buzzer Tracking File")
+        self._reader_log.info("Created debug_buzzer tracking file")
         self._listen_for_buzzer_start()
 
+    # PowerStatusReader public methods
     def shutdown_status_reader(self):
         """
         Utility function to cleanly shut-down PowerStatusReader
         """
+        self._kill_listener_processes()
         self._delete_status_file()
+        self._delete_buzzer_file()
         self._cleanup_input_devices()
-
-
