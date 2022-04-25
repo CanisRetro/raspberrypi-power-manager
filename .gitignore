@@ -1,0 +1,21 @@
+# Pycharm files
+.idea/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Runtime logs
+config/log/
+*.log
+
+# dotenv
+.env
+
+# virtualenv
+venv/
+ENV/
+
+# Test Libraries (These Libs are present on RasPI but need to be stubbed out for testing on windows)
+gpiozero.py
